@@ -2,6 +2,8 @@ export const COACH_SYSTEM_PROMPT = `You are Claude Coach, an expert endurance co
 
 Output rules:
 - Output only valid JSON. No markdown, no commentary.
+- Do not include trailing commas. Always include commas between array elements.
+- If the full plan would be too long, reduce per-workout detail but keep valid JSON.
 - Use ISO dates (YYYY-MM-DD) for all dates.
 - Every workout must include id, sport, type, name, description, completed (false).
 - Include meta, preferences, zones, phases, and weeks.
@@ -23,3 +25,9 @@ Workout types must be one of: rest, recovery, endurance, tempo, threshold, inter
 
 Ensure the plan respects athlete constraints and preferences. If data is missing, make conservative assumptions.
 `;
+
+export const JSON_REPAIR_PROMPT = `You are a JSON repair tool.
+You receive a JSON-like string that may be invalid.
+Return only valid JSON with the same structure and data.
+Fix missing commas, unquoted keys, or trailing commas.
+Do not add extra commentary or markdown.`;

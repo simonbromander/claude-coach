@@ -1,7 +1,7 @@
 import { json } from "@sveltejs/kit";
 import type { RequestHandler } from "./$types";
 import { requireBuilderSecret } from "$lib/server/builder-auth";
-import { COACH_SYSTEM_PROMPT } from "$lib/server/prompt";
+import { COACH_SYSTEM_PROMPT, JSON_REPAIR_PROMPT } from "$lib/server/prompt";
 import { createClaudeMessage } from "$lib/server/anthropic";
 import { buildAssessment, summarizeActivities } from "$lib/server/assessment";
 import {
@@ -40,6 +40,21 @@ function extractJson(text: string): any {
     if (start === -1 || end === -1) throw new Error("No JSON found in Claude response");
     return JSON.parse(text.slice(start, end + 1));
   }
+}
+
+async function repairJson({ raw, error }: { raw: string; error: string }): Promise<string> {
+  return createClaudeMessage({
+    system: JSON_REPAIR_PROMPT,
+    messages: [
+      {
+        role: "user",
+        content: `Error: ${error}\n\nFix this JSON:\n${raw}`,
+      },
+    ],
+    model: ANTHROPIC_MODEL,
+    maxTokens: Number(privateEnv.ANTHROPIC_REPAIR_MAX_TOKENS || 4000),
+    timeoutMs: Number(privateEnv.ANTHROPIC_TIMEOUT_MS || 55000),
+  });
 }
 
 export const POST: RequestHandler = async ({ request }) => {
@@ -124,11 +139,20 @@ export const POST: RequestHandler = async ({ request }) => {
       system: COACH_SYSTEM_PROMPT,
       messages: [{ role: "user", content: JSON.stringify(payload) }],
       model: ANTHROPIC_MODEL,
+      maxTokens: Number(privateEnv.ANTHROPIC_MAX_TOKENS || 8000),
       timeoutMs: Number(privateEnv.ANTHROPIC_TIMEOUT_MS || 55000),
     });
     console.log("builder.generate claude", { tookMs: Date.now() - startedAt });
 
-    const plan = extractJson(responseText);
+    let plan: any;
+    try {
+      plan = extractJson(responseText);
+    } catch (error) {
+      const message = error instanceof Error ? error.message : "Invalid JSON";
+      console.warn("builder.generate json invalid, attempting repair", { message });
+      const repaired = await repairJson({ raw: responseText, error: message });
+      plan = extractJson(repaired);
+    }
 
     const planId = plan?.meta?.id || `plan-${Date.now()}`;
     plan.meta = {
