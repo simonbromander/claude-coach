@@ -92,6 +92,135 @@ function extractJson(text: string): any {
   }
 }
 
+function repairJsonLocally(input: string): string {
+  let out = "";
+  const stack: ("object" | "array")[] = [];
+  let inString = false;
+  let escape = false;
+  let lastSignificant = "";
+
+  const isWhitespace = (ch: string) => ch === " " || ch === "\n" || ch === "\r" || ch === "\t";
+  const isDigit = (ch: string) => ch >= "0" && ch <= "9";
+  const isValueStart = (ch: string) =>
+    ch === "{" ||
+    ch === "[" ||
+    ch === '"' ||
+    ch === "-" ||
+    isDigit(ch) ||
+    ch === "t" ||
+    ch === "f" ||
+    ch === "n";
+
+  for (let i = 0; i < input.length; i += 1) {
+    const ch = input[i];
+
+    if (inString) {
+      out += ch;
+      if (escape) {
+        escape = false;
+      } else if (ch === "\\") {
+        escape = true;
+      } else if (ch === '"') {
+        inString = false;
+        lastSignificant = '"';
+      }
+      continue;
+    }
+
+    if (ch === '"') {
+      const inArray = stack[stack.length - 1] === "array";
+      if (inArray && lastSignificant && !["[", ",", ":"].includes(lastSignificant)) {
+        out += ",";
+        lastSignificant = ",";
+      }
+      inString = true;
+      out += ch;
+      continue;
+    }
+
+    if (ch === "{") {
+      const inArray = stack[stack.length - 1] === "array";
+      if (inArray && lastSignificant && !["[", ",", ":"].includes(lastSignificant)) {
+        out += ",";
+        lastSignificant = ",";
+      }
+      stack.push("object");
+      out += ch;
+      lastSignificant = "{";
+      continue;
+    }
+
+    if (ch === "[") {
+      const inArray = stack[stack.length - 1] === "array";
+      if (inArray && lastSignificant && !["[", ",", ":"].includes(lastSignificant)) {
+        out += ",";
+        lastSignificant = ",";
+      }
+      stack.push("array");
+      out += ch;
+      lastSignificant = "[";
+      continue;
+    }
+
+    if (ch === "}" || ch === "]") {
+      let j = out.length - 1;
+      while (j >= 0 && isWhitespace(out[j])) j -= 1;
+      if (out[j] === ",") {
+        out = out.slice(0, j) + out.slice(j + 1);
+      }
+      if (stack.length) stack.pop();
+      out += ch;
+      lastSignificant = ch;
+      continue;
+    }
+
+    if (!isWhitespace(ch)) {
+      const inArray = stack[stack.length - 1] === "array";
+      if (
+        inArray &&
+        isValueStart(ch) &&
+        lastSignificant &&
+        !["[", ",", ":"].includes(lastSignificant)
+      ) {
+        out += ",";
+        lastSignificant = ",";
+      }
+      out += ch;
+      lastSignificant = ch;
+      continue;
+    }
+
+    out += ch;
+  }
+
+  return out;
+}
+
+function compactPlan(plan: any, output: OutputSettings) {
+  if (!plan?.weeks || !Array.isArray(plan.weeks)) return;
+  if (!output?.detailWeeks || output.detailWeeks >= plan.weeks.length) return;
+
+  plan.weeks = plan.weeks.map((week: any, index: number) => {
+    if (index < output.detailWeeks) return week;
+    const firstDay = Array.isArray(week.days) && week.days.length > 0 ? week.days[0] : null;
+    return {
+      ...week,
+      summary:
+        typeof week.summary === "string"
+          ? week.summary.slice(0, output.maxWeeklySummaryChars)
+          : (week.summary ?? ""),
+      days: firstDay
+        ? [
+            {
+              ...firstDay,
+              workouts: [],
+            },
+          ]
+        : [],
+    };
+  });
+}
+
 async function repairJson({ raw, error }: { raw: string; error: string }): Promise<string> {
   return createClaudeMessage({
     system: JSON_REPAIR_PROMPT,
@@ -204,9 +333,19 @@ export const POST: RequestHandler = async ({ request }) => {
     } catch (error) {
       const message = error instanceof Error ? error.message : "Invalid JSON";
       console.warn("builder.generate json invalid, attempting repair", { message });
-      const repaired = await repairJson({ raw: responseText, error: message });
-      plan = extractJson(repaired);
+      const localRepair = repairJsonLocally(responseText);
+      try {
+        plan = extractJson(localRepair);
+      } catch (localError) {
+        const repaired = await repairJson({
+          raw: localRepair,
+          error: localError instanceof Error ? localError.message : message,
+        });
+        plan = extractJson(repaired);
+      }
     }
+
+    compactPlan(plan, output);
 
     const planId = plan?.meta?.id || `plan-${Date.now()}`;
     plan.meta = {
