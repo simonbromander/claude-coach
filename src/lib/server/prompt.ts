@@ -23,6 +23,15 @@ Schema summary (fields required by the app):
 Workout sports must be one of: swim, bike, run, strength, brick, race, rest.
 Workout types must be one of: rest, recovery, endurance, tempo, threshold, intervals, vo2max, sprint, race, brick, technique, openwater, hills, long.
 
+Output scaling:
+- If input.output is present, obey its limits:
+  - detailLevel: "full" | "compact" | "ultra"
+  - maxWorkoutsPerDay
+  - maxWorkoutsPerWeek
+  - maxDescriptionChars
+  - maxWeeklySummaryChars
+- For compact/ultra: keep workout names and descriptions short and avoid long summaries.
+
 Ensure the plan respects athlete constraints and preferences. If data is missing, make conservative assumptions.
 `;
 

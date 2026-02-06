@@ -187,8 +187,8 @@ export function buildAssessment(
   };
 }
 
-export function summarizeActivities(activities: StravaActivity[]) {
-  return activities.slice(0, 40).map((activity) => ({
+export function summarizeActivities(activities: StravaActivity[], limit = 25) {
+  return activities.slice(0, limit).map((activity) => ({
     date: activity.start_date.split("T")[0],
     sport: activity.sport_type,
     name: activity.name,

@@ -31,6 +31,46 @@ function weeksBetween(start: Date, end: Date): number {
   return Math.max(1, Math.ceil(ms / (7 * 24 * 60 * 60 * 1000)));
 }
 
+type OutputSettings = {
+  detailLevel: "full" | "compact" | "ultra";
+  maxWorkoutsPerDay: number;
+  maxWorkoutsPerWeek: number;
+  maxDescriptionChars: number;
+  maxWeeklySummaryChars: number;
+  recentActivitiesLimit: number;
+};
+
+function outputSettings(totalWeeks: number): OutputSettings {
+  if (totalWeeks <= 24) {
+    return {
+      detailLevel: "full",
+      maxWorkoutsPerDay: 2,
+      maxWorkoutsPerWeek: 7,
+      maxDescriptionChars: 200,
+      maxWeeklySummaryChars: 200,
+      recentActivitiesLimit: 40,
+    };
+  }
+  if (totalWeeks <= 36) {
+    return {
+      detailLevel: "compact",
+      maxWorkoutsPerDay: 1,
+      maxWorkoutsPerWeek: 6,
+      maxDescriptionChars: 120,
+      maxWeeklySummaryChars: 120,
+      recentActivitiesLimit: 25,
+    };
+  }
+  return {
+    detailLevel: "ultra",
+    maxWorkoutsPerDay: 1,
+    maxWorkoutsPerWeek: 5,
+    maxDescriptionChars: 90,
+    maxWeeklySummaryChars: 100,
+    recentActivitiesLimit: 20,
+  };
+}
+
 function extractJson(text: string): any {
   try {
     return JSON.parse(text);
@@ -91,6 +131,9 @@ export const POST: RequestHandler = async ({ request }) => {
     const afterDate = new Date();
     afterDate.setDate(afterDate.getDate() - syncDays);
 
+    const totalWeeks = weeksBetween(planStart, eventDate);
+    const output = outputSettings(totalWeeks);
+
     const [athleteProfile, activities] = await Promise.all([
       fetchAthlete(tokens),
       fetchActivities(tokens, afterDate, { maxActivities }),
@@ -129,10 +172,11 @@ export const POST: RequestHandler = async ({ request }) => {
       plan: {
         startDate: toISODate(planStart),
         endDate: toISODate(eventDate),
-        totalWeeks: weeksBetween(planStart, eventDate),
+        totalWeeks,
       },
+      output,
       assessment,
-      recentActivities: summarizeActivities(activities),
+      recentActivities: summarizeActivities(activities, output.recentActivitiesLimit),
     };
 
     const responseText = await createClaudeMessage({
