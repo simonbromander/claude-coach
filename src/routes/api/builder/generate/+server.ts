@@ -11,12 +11,8 @@ import {
   StravaUnauthorizedError,
 } from "$lib/server/strava";
 import { supabase } from "$lib/server/supabase";
-import {
-  STRAVA_SYNC_DAYS,
-  STRAVA_MAX_ACTIVITIES,
-  ANTHROPIC_MODEL,
-  ANTHROPIC_TIMEOUT_MS,
-} from "$env/static/private";
+import { STRAVA_SYNC_DAYS, ANTHROPIC_MODEL } from "$env/static/private";
+import { env as privateEnv } from "$env/dynamic/private";
 
 function toISODate(date: Date): string {
   return date.toISOString().split("T")[0];
@@ -76,7 +72,7 @@ export const POST: RequestHandler = async ({ request }) => {
     }
 
     const syncDays = Number(STRAVA_SYNC_DAYS || 730);
-    const maxActivities = Number(STRAVA_MAX_ACTIVITIES || 1500);
+    const maxActivities = Number(privateEnv.STRAVA_MAX_ACTIVITIES || 1500);
     const afterDate = new Date();
     afterDate.setDate(afterDate.getDate() - syncDays);
 
@@ -128,7 +124,7 @@ export const POST: RequestHandler = async ({ request }) => {
       system: COACH_SYSTEM_PROMPT,
       messages: [{ role: "user", content: JSON.stringify(payload) }],
       model: ANTHROPIC_MODEL,
-      timeoutMs: Number(ANTHROPIC_TIMEOUT_MS || 55000),
+      timeoutMs: Number(privateEnv.ANTHROPIC_TIMEOUT_MS || 55000),
     });
     console.log("builder.generate claude", { tookMs: Date.now() - startedAt });
 
