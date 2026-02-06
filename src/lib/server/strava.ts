@@ -188,10 +188,12 @@ export async function fetchAthlete(tokens: StoredTokens): Promise<StravaAthlete>
 
 export async function fetchActivities(
   tokens: StoredTokens,
-  afterDate: Date
+  afterDate: Date,
+  options: { maxActivities?: number } = {}
 ): Promise<StravaActivity[]> {
   const after = Math.floor(afterDate.getTime() / 1000);
   const activities: StravaActivity[] = [];
+  const maxActivities = options.maxActivities ?? Infinity;
   let page = 1;
   const perPage = 100;
 
@@ -211,6 +213,9 @@ export async function fetchActivities(
 
     const batch: StravaActivity[] = await response.json();
     activities.push(...batch);
+    if (activities.length >= maxActivities) {
+      return activities.slice(0, maxActivities);
+    }
     if (batch.length < perPage) break;
     page += 1;
     await new Promise((resolve) => setTimeout(resolve, 100));

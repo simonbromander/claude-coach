@@ -11,7 +11,12 @@ import {
   StravaUnauthorizedError,
 } from "$lib/server/strava";
 import { supabase } from "$lib/server/supabase";
-import { STRAVA_SYNC_DAYS, ANTHROPIC_MODEL } from "$env/static/private";
+import {
+  STRAVA_SYNC_DAYS,
+  STRAVA_MAX_ACTIVITIES,
+  ANTHROPIC_MODEL,
+  ANTHROPIC_TIMEOUT_MS,
+} from "$env/static/private";
 
 function toISODate(date: Date): string {
   return date.toISOString().split("T")[0];
@@ -43,6 +48,8 @@ function extractJson(text: string): any {
 
 export const POST: RequestHandler = async ({ request }) => {
   requireBuilderSecret(request);
+  const startedAt = Date.now();
+  console.log("builder.generate start");
 
   try {
     const body = await request.json();
@@ -69,13 +76,18 @@ export const POST: RequestHandler = async ({ request }) => {
     }
 
     const syncDays = Number(STRAVA_SYNC_DAYS || 730);
+    const maxActivities = Number(STRAVA_MAX_ACTIVITIES || 1500);
     const afterDate = new Date();
     afterDate.setDate(afterDate.getDate() - syncDays);
 
     const [athleteProfile, activities] = await Promise.all([
       fetchAthlete(tokens),
-      fetchActivities(tokens, afterDate),
+      fetchActivities(tokens, afterDate, { maxActivities }),
     ]);
+    console.log("builder.generate strava", {
+      activities: activities.length,
+      tookMs: Date.now() - startedAt,
+    });
 
     const assessment = buildAssessment(activities, {
       yearsInSport: athlete?.yearsInSport ?? null,
@@ -116,7 +128,9 @@ export const POST: RequestHandler = async ({ request }) => {
       system: COACH_SYSTEM_PROMPT,
       messages: [{ role: "user", content: JSON.stringify(payload) }],
       model: ANTHROPIC_MODEL,
+      timeoutMs: Number(ANTHROPIC_TIMEOUT_MS || 55000),
     });
+    console.log("builder.generate claude", { tookMs: Date.now() - startedAt });
 
     const plan = extractJson(responseText);
 
@@ -149,8 +163,10 @@ export const POST: RequestHandler = async ({ request }) => {
       return json({ error: error.message }, { status: 500 });
     }
 
+    console.log("builder.generate saved", { planId, tookMs: Date.now() - startedAt });
     return json({ planId });
   } catch (err) {
+    console.error("builder.generate failed", err);
     if (err instanceof StravaUnauthorizedError) {
       return json(
         {

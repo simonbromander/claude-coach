@@ -38,11 +38,13 @@ Create a Strava app and set the callback **domain** to your app host (for Vercel
    - `BUILDER_ACCESS_SECRET`
    - `ANTHROPIC_API_KEY`
    - `ANTHROPIC_MODEL`
+   - `ANTHROPIC_TIMEOUT_MS` (default 55000)
    - `STRAVA_CLIENT_ID`
    - `STRAVA_CLIENT_SECRET`
    - `STRAVA_ACCESS_TOKEN` (optional seed)
    - `STRAVA_REFRESH_TOKEN` (optional seed)
    - `STRAVA_SYNC_DAYS` (default 730)
+   - `STRAVA_MAX_ACTIVITIES` (default 1500)
 4. Deploy:
    - `vercel --prod`
 
@@ -57,11 +59,13 @@ PUBLIC_APP_URL=http://localhost:5173
 BUILDER_ACCESS_SECRET=...
 ANTHROPIC_API_KEY=...
 ANTHROPIC_MODEL=claude-opus-4-20250514
+ANTHROPIC_TIMEOUT_MS=55000
 STRAVA_CLIENT_ID=...
 STRAVA_CLIENT_SECRET=...
 STRAVA_ACCESS_TOKEN=...
 STRAVA_REFRESH_TOKEN=...
 STRAVA_SYNC_DAYS=730
+STRAVA_MAX_ACTIVITIES=1500
 ```
 
 Run the app:

@@ -14,12 +14,14 @@ export async function createClaudeMessage({
   maxTokens = 8000,
   temperature = 0.4,
   model,
+  timeoutMs = 55000,
 }: {
   system: string;
   messages: AnthropicMessage[];
   maxTokens?: number;
   temperature?: number;
   model?: string;
+  timeoutMs?: number;
 }): Promise<string> {
   if (!ANTHROPIC_API_KEY) {
     throw new Error("Missing ANTHROPIC_API_KEY");
@@ -29,21 +31,35 @@ export async function createClaudeMessage({
     throw new Error("Missing ANTHROPIC_MODEL");
   }
 
-  const response = await fetch(API_URL, {
-    method: "POST",
-    headers: {
-      "content-type": "application/json",
-      "x-api-key": ANTHROPIC_API_KEY,
-      "anthropic-version": API_VERSION,
-    },
-    body: JSON.stringify({
-      model: modelName,
-      max_tokens: maxTokens,
-      temperature,
-      system,
-      messages,
-    }),
-  });
+  const controller = new AbortController();
+  const timeout = setTimeout(() => controller.abort(), timeoutMs);
+
+  let response: Response;
+  try {
+    response = await fetch(API_URL, {
+      method: "POST",
+      headers: {
+        "content-type": "application/json",
+        "x-api-key": ANTHROPIC_API_KEY,
+        "anthropic-version": API_VERSION,
+      },
+      body: JSON.stringify({
+        model: modelName,
+        max_tokens: maxTokens,
+        temperature,
+        system,
+        messages,
+      }),
+      signal: controller.signal,
+    });
+  } catch (error) {
+    if (error instanceof Error && error.name === "AbortError") {
+      throw new Error("Claude API request timed out");
+    }
+    throw error;
+  } finally {
+    clearTimeout(timeout);
+  }
 
   if (!response.ok) {
     const text = await response.text();
