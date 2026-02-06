@@ -177,8 +177,8 @@
       <h2>Access</h2>
       <p class="muted">Enter the builder access secret to continue.</p>
       <div class="field">
-        <label>Access Secret</label>
-        <input type="password" bind:value={secret} placeholder="Access secret" />
+        <label for="access-secret">Access Secret</label>
+        <input id="access-secret" type="password" bind:value={secret} placeholder="Access secret" />
       </div>
       <label class="checkbox">
         <input type="checkbox" bind:checked={rememberSecret} />
@@ -213,16 +213,16 @@
       <h2>Event Details</h2>
       <div class="grid">
         <div class="field">
-          <label>Event Name</label>
-          <input bind:value={event.name} placeholder="Ironman 70.3 Oceanside" />
+          <label for="event-name">Event Name</label>
+          <input id="event-name" bind:value={event.name} placeholder="Ironman 70.3 Oceanside" />
         </div>
         <div class="field">
-          <label>Event Date</label>
-          <input type="date" bind:value={event.date} />
+          <label for="event-date">Event Date</label>
+          <input id="event-date" type="date" bind:value={event.date} />
         </div>
         <div class="field">
-          <label>Event Type</label>
-          <select bind:value={event.type}>
+          <label for="event-type">Event Type</label>
+          <select id="event-type" bind:value={event.type}>
             <option value="triathlon">Triathlon</option>
             <option value="half-ironman">70.3 / Half Ironman</option>
             <option value="ironman">Full Ironman</option>
@@ -233,8 +233,12 @@
           </select>
         </div>
         <div class="field">
-          <label>Goal (optional)</label>
-          <input bind:value={event.goal} placeholder="Finish strong / 1:45 target" />
+          <label for="event-goal">Goal (optional)</label>
+          <input
+            id="event-goal"
+            bind:value={event.goal}
+            placeholder="Finish strong / 1:45 target"
+          />
         </div>
       </div>
       <div class="actions">
@@ -247,41 +251,51 @@
       <h2>Background</h2>
       <div class="grid">
         <div class="field">
-          <label>Athlete Name</label>
-          <input bind:value={athlete.name} placeholder="Optional" />
+          <label for="athlete-name">Athlete Name</label>
+          <input id="athlete-name" bind:value={athlete.name} placeholder="Optional" />
         </div>
         <div class="field">
-          <label>Years in Sport</label>
-          <input type="number" min="0" bind:value={athlete.yearsInSport} placeholder="3" />
+          <label for="athlete-years">Years in Sport</label>
+          <input
+            id="athlete-years"
+            type="number"
+            min="0"
+            bind:value={athlete.yearsInSport}
+            placeholder="3"
+          />
         </div>
       </div>
       <div class="field">
-        <label>Race History</label>
+        <label for="race-history">Race History</label>
         <textarea
+          id="race-history"
           bind:value={athlete.raceHistory}
           rows="3"
           placeholder="Past races, times, experience"
         ></textarea>
       </div>
       <div class="field">
-        <label>Injuries or Health Constraints</label>
+        <label for="injuries">Injuries or Health Constraints</label>
         <textarea
+          id="injuries"
           bind:value={constraints.injuries}
           rows="2"
           placeholder="Anything to be careful about"
         ></textarea>
       </div>
       <div class="field">
-        <label>Schedule Constraints</label>
+        <label for="schedule">Schedule Constraints</label>
         <textarea
+          id="schedule"
           bind:value={constraints.schedule}
           rows="2"
           placeholder="Busy days, travel, limited pool access"
         ></textarea>
       </div>
       <div class="field">
-        <label>Other Notes</label>
+        <label for="notes">Other Notes</label>
         <textarea
+          id="notes"
           bind:value={constraints.notes}
           rows="2"
           placeholder="Preferences, dislikes, focus areas"
@@ -295,29 +309,29 @@
       <h2>Preferences</h2>
       <div class="grid">
         <div class="field">
-          <label>Swim Units</label>
-          <select bind:value={preferences.swim}>
+          <label for="pref-swim">Swim Units</label>
+          <select id="pref-swim" bind:value={preferences.swim}>
             <option value="meters">Meters</option>
             <option value="yards">Yards</option>
           </select>
         </div>
         <div class="field">
-          <label>Bike Units</label>
-          <select bind:value={preferences.bike}>
+          <label for="pref-bike">Bike Units</label>
+          <select id="pref-bike" bind:value={preferences.bike}>
             <option value="kilometers">Kilometers</option>
             <option value="miles">Miles</option>
           </select>
         </div>
         <div class="field">
-          <label>Run Units</label>
-          <select bind:value={preferences.run}>
+          <label for="pref-run">Run Units</label>
+          <select id="pref-run" bind:value={preferences.run}>
             <option value="kilometers">Kilometers</option>
             <option value="miles">Miles</option>
           </select>
         </div>
         <div class="field">
-          <label>First Day of Week</label>
-          <select bind:value={preferences.firstDayOfWeek}>
+          <label for="pref-week">First Day of Week</label>
+          <select id="pref-week" bind:value={preferences.firstDayOfWeek}>
             <option value="monday">Monday</option>
             <option value="sunday">Sunday</option>
           </select>

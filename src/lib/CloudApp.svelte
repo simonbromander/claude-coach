@@ -32,9 +32,12 @@
 
   let { plan, initialChanges = null, initialCompleted = null, onPersist }: Props = $props();
 
-  const planId = plan.meta?.id ?? "plan";
-  if (!plan.meta) plan.meta = { id: planId };
-  if (!plan.meta.id) plan.meta.id = planId;
+  const planId = $derived(plan.meta?.id ?? "plan");
+
+  $effect(() => {
+    if (!plan.meta) plan.meta = { id: planId };
+    if (!plan.meta.id) plan.meta.id = planId;
+  });
 
   // Reactive state
   let settings = $state<Settings>(loadSettingsForPlan(plan));
