@@ -26,11 +26,14 @@ Workout types must be one of: rest, recovery, endurance, tempo, threshold, inter
 Output scaling:
 - If input.output is present, obey its limits:
   - detailLevel: "full" | "compact" | "ultra"
+  - detailWeeks: number (how many initial weeks should be fully detailed)
   - maxWorkoutsPerDay
   - maxWorkoutsPerWeek
   - maxDescriptionChars
   - maxWeeklySummaryChars
 - For compact/ultra: keep workout names and descriptions short and avoid long summaries.
+- For weeks after output.detailWeeks, include only one TrainingDay (the first day of the week)
+  with an empty workouts array or a single rest workout. Keep summaries very short.
 
 Ensure the plan respects athlete constraints and preferences. If data is missing, make conservative assumptions.
 `;

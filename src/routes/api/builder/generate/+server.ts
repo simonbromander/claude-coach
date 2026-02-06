@@ -33,6 +33,7 @@ function weeksBetween(start: Date, end: Date): number {
 
 type OutputSettings = {
   detailLevel: "full" | "compact" | "ultra";
+  detailWeeks: number;
   maxWorkoutsPerDay: number;
   maxWorkoutsPerWeek: number;
   maxDescriptionChars: number;
@@ -44,6 +45,7 @@ function outputSettings(totalWeeks: number): OutputSettings {
   if (totalWeeks <= 24) {
     return {
       detailLevel: "full",
+      detailWeeks: totalWeeks,
       maxWorkoutsPerDay: 2,
       maxWorkoutsPerWeek: 7,
       maxDescriptionChars: 200,
@@ -54,6 +56,7 @@ function outputSettings(totalWeeks: number): OutputSettings {
   if (totalWeeks <= 36) {
     return {
       detailLevel: "compact",
+      detailWeeks: 16,
       maxWorkoutsPerDay: 1,
       maxWorkoutsPerWeek: 6,
       maxDescriptionChars: 120,
@@ -63,12 +66,19 @@ function outputSettings(totalWeeks: number): OutputSettings {
   }
   return {
     detailLevel: "ultra",
+    detailWeeks: 12,
     maxWorkoutsPerDay: 1,
     maxWorkoutsPerWeek: 5,
     maxDescriptionChars: 90,
     maxWeeklySummaryChars: 100,
     recentActivitiesLimit: 20,
   };
+}
+
+function maxTokensForOutput(output: OutputSettings): number {
+  if (output.detailLevel === "ultra") return 3500;
+  if (output.detailLevel === "compact") return 5000;
+  return 8000;
 }
 
 function extractJson(text: string): any {
@@ -183,7 +193,7 @@ export const POST: RequestHandler = async ({ request }) => {
       system: COACH_SYSTEM_PROMPT,
       messages: [{ role: "user", content: JSON.stringify(payload) }],
       model: ANTHROPIC_MODEL,
-      maxTokens: Number(privateEnv.ANTHROPIC_MAX_TOKENS || 8000),
+      maxTokens: Number(privateEnv.ANTHROPIC_MAX_TOKENS || maxTokensForOutput(output)),
       timeoutMs: Number(privateEnv.ANTHROPIC_TIMEOUT_MS || 55000),
     });
     console.log("builder.generate claude", { tookMs: Date.now() - startedAt });
