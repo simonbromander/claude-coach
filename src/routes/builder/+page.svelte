@@ -80,6 +80,9 @@
       const data = await res.json();
       stravaConnected = !!data.connected;
       athleteName = data.athlete ? `${data.athlete.firstname} ${data.athlete.lastname}` : null;
+      if (!data.connected && data.reason === "missing_activity_scope") {
+        statusError = "Strava needs re-authorization to access activities. Click Connect Strava.";
+      }
     } catch (e) {
       statusError = e instanceof Error ? e.message : "Failed to load Strava status";
     } finally {

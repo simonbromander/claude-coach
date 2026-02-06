@@ -4,7 +4,12 @@ import { requireBuilderSecret } from "$lib/server/builder-auth";
 import { COACH_SYSTEM_PROMPT } from "$lib/server/prompt";
 import { createClaudeMessage } from "$lib/server/anthropic";
 import { buildAssessment, summarizeActivities } from "$lib/server/assessment";
-import { fetchActivities, fetchAthlete, getValidTokens } from "$lib/server/strava";
+import {
+  fetchActivities,
+  fetchAthlete,
+  getValidTokens,
+  StravaUnauthorizedError,
+} from "$lib/server/strava";
 import { supabase } from "$lib/server/supabase";
 import { STRAVA_SYNC_DAYS, ANTHROPIC_MODEL } from "$env/static/private";
 
@@ -39,109 +44,124 @@ function extractJson(text: string): any {
 export const POST: RequestHandler = async ({ request }) => {
   requireBuilderSecret(request);
 
-  const body = await request.json();
-  const { event, athlete, constraints, preferences } = body || {};
+  try {
+    const body = await request.json();
+    const { event, athlete, constraints, preferences } = body || {};
 
-  if (!event?.name || !event?.date) {
-    return json({ error: "Missing event name or date" }, { status: 400 });
-  }
+    if (!event?.name || !event?.date) {
+      return json({ error: "Missing event name or date" }, { status: 400 });
+    }
 
-  const eventDate = new Date(event.date);
-  if (Number.isNaN(eventDate.getTime())) {
-    return json({ error: "Invalid event date" }, { status: 400 });
-  }
+    const eventDate = new Date(event.date);
+    if (Number.isNaN(eventDate.getTime())) {
+      return json({ error: "Invalid event date" }, { status: 400 });
+    }
 
-  const today = new Date();
-  const planStart = nextMonday(today);
-  if (eventDate.getTime() <= planStart.getTime()) {
-    return json({ error: "Event date must be after the plan start date" }, { status: 400 });
-  }
+    const today = new Date();
+    const planStart = nextMonday(today);
+    if (eventDate.getTime() <= planStart.getTime()) {
+      return json({ error: "Event date must be after the plan start date" }, { status: 400 });
+    }
 
-  const tokens = await getValidTokens();
-  if (!tokens) {
-    return json({ error: "Strava not connected" }, { status: 400 });
-  }
+    const tokens = await getValidTokens();
+    if (!tokens) {
+      return json({ error: "Strava not connected" }, { status: 400 });
+    }
 
-  const syncDays = Number(STRAVA_SYNC_DAYS || 730);
-  const afterDate = new Date();
-  afterDate.setDate(afterDate.getDate() - syncDays);
+    const syncDays = Number(STRAVA_SYNC_DAYS || 730);
+    const afterDate = new Date();
+    afterDate.setDate(afterDate.getDate() - syncDays);
 
-  const [athleteProfile, activities] = await Promise.all([
-    fetchAthlete(tokens),
-    fetchActivities(tokens, afterDate),
-  ]);
+    const [athleteProfile, activities] = await Promise.all([
+      fetchAthlete(tokens),
+      fetchActivities(tokens, afterDate),
+    ]);
 
-  const assessment = buildAssessment(activities, {
-    yearsInSport: athlete?.yearsInSport ?? null,
-    raceHistory: athlete?.raceHistory ?? null,
-    constraints: constraints?.injuries ?? null,
-    schedule: constraints?.schedule ?? null,
-    goals: event?.goal ?? null,
-  });
-
-  const payload = {
-    event: {
-      name: event.name,
-      date: event.date,
-      type: event.type ?? "",
-      goal: event.goal ?? "",
-    },
-    athlete: {
-      name: athlete?.name ?? `${athleteProfile.firstname} ${athleteProfile.lastname}`,
+    const assessment = buildAssessment(activities, {
       yearsInSport: athlete?.yearsInSport ?? null,
-      raceHistory: athlete?.raceHistory ?? "",
-    },
-    constraints: {
-      injuries: constraints?.injuries ?? "",
-      schedule: constraints?.schedule ?? "",
-      notes: constraints?.notes ?? "",
-    },
-    preferences,
-    plan: {
-      startDate: toISODate(planStart),
-      endDate: toISODate(eventDate),
-      totalWeeks: weeksBetween(planStart, eventDate),
-    },
-    assessment,
-    recentActivities: summarizeActivities(activities),
-  };
+      raceHistory: athlete?.raceHistory ?? null,
+      constraints: constraints?.injuries ?? null,
+      schedule: constraints?.schedule ?? null,
+      goals: event?.goal ?? null,
+    });
 
-  const responseText = await createClaudeMessage({
-    system: COACH_SYSTEM_PROMPT,
-    messages: [{ role: "user", content: JSON.stringify(payload) }],
-    model: ANTHROPIC_MODEL,
-  });
+    const payload = {
+      event: {
+        name: event.name,
+        date: event.date,
+        type: event.type ?? "",
+        goal: event.goal ?? "",
+      },
+      athlete: {
+        name: athlete?.name ?? `${athleteProfile.firstname} ${athleteProfile.lastname}`,
+        yearsInSport: athlete?.yearsInSport ?? null,
+        raceHistory: athlete?.raceHistory ?? "",
+      },
+      constraints: {
+        injuries: constraints?.injuries ?? "",
+        schedule: constraints?.schedule ?? "",
+        notes: constraints?.notes ?? "",
+      },
+      preferences,
+      plan: {
+        startDate: toISODate(planStart),
+        endDate: toISODate(eventDate),
+        totalWeeks: weeksBetween(planStart, eventDate),
+      },
+      assessment,
+      recentActivities: summarizeActivities(activities),
+    };
 
-  const plan = extractJson(responseText);
+    const responseText = await createClaudeMessage({
+      system: COACH_SYSTEM_PROMPT,
+      messages: [{ role: "user", content: JSON.stringify(payload) }],
+      model: ANTHROPIC_MODEL,
+    });
 
-  const planId = plan?.meta?.id || `plan-${Date.now()}`;
-  plan.meta = {
-    ...plan.meta,
-    id: planId,
-    event: event.name,
-    eventDate: event.date,
-    planStartDate: toISODate(planStart),
-    planEndDate: toISODate(eventDate),
-    totalWeeks: plan.weeks?.length ?? payload.plan.totalWeeks,
-    generatedAt: new Date().toISOString(),
-  };
+    const plan = extractJson(responseText);
 
-  if (!plan.preferences && preferences) {
-    plan.preferences = preferences;
-  }
-
-  const { error } = await supabase.from("plans").upsert(
-    {
+    const planId = plan?.meta?.id || `plan-${Date.now()}`;
+    plan.meta = {
+      ...plan.meta,
       id: planId,
-      data: plan,
-      updated_at: new Date().toISOString(),
-    },
-    { onConflict: "id" }
-  );
+      event: event.name,
+      eventDate: event.date,
+      planStartDate: toISODate(planStart),
+      planEndDate: toISODate(eventDate),
+      totalWeeks: plan.weeks?.length ?? payload.plan.totalWeeks,
+      generatedAt: new Date().toISOString(),
+    };
 
-  if (error) {
-    return json({ error: error.message }, { status: 500 });
+    if (!plan.preferences && preferences) {
+      plan.preferences = preferences;
+    }
+
+    const { error } = await supabase.from("plans").upsert(
+      {
+        id: planId,
+        data: plan,
+        updated_at: new Date().toISOString(),
+      },
+      { onConflict: "id" }
+    );
+
+    if (error) {
+      return json({ error: error.message }, { status: 500 });
+    }
+
+    return json({ planId });
+  } catch (err) {
+    if (err instanceof StravaUnauthorizedError) {
+      return json(
+        {
+          error:
+            "Strava authorization missing activity scope. Click Connect Strava to re-authorize.",
+        },
+        { status: 401 }
+      );
+    }
+
+    const message = err instanceof Error ? err.message : "Internal error";
+    return json({ error: message }, { status: 500 });
   }
-
-  return json({ planId });
 };

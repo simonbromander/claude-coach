@@ -160,6 +160,24 @@ async function fetchWithRetry(url: string, accessToken: string, retries = 3): Pr
   return response;
 }
 
+export class StravaUnauthorizedError extends Error {
+  constructor(message: string) {
+    super(message);
+    this.name = "StravaUnauthorizedError";
+  }
+}
+
+export async function canReadActivities(tokens: StoredTokens): Promise<boolean> {
+  const url = new URL(`${API_BASE}/athlete/activities`);
+  url.searchParams.set("per_page", "1");
+  const response = await fetchWithRetry(url.toString(), tokens.access_token, 0);
+  if (response.status === 401 || response.status === 403) return false;
+  if (!response.ok) {
+    throw new Error(`Failed to check activity access: ${response.statusText}`);
+  }
+  return true;
+}
+
 export async function fetchAthlete(tokens: StoredTokens): Promise<StravaAthlete> {
   const response = await fetchWithRetry(`${API_BASE}/athlete`, tokens.access_token);
   if (!response.ok) {
@@ -184,6 +202,9 @@ export async function fetchActivities(
     url.searchParams.set("per_page", perPage.toString());
 
     const response = await fetchWithRetry(url.toString(), tokens.access_token);
+    if (response.status === 401 || response.status === 403) {
+      throw new StravaUnauthorizedError("Strava activities access unauthorized");
+    }
     if (!response.ok) {
       throw new Error(`Failed to fetch activities: ${response.statusText}`);
     }
