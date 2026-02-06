@@ -1,0 +1,22 @@
+{
+  "compilerOptions": {
+    "target": "ES2022",
+    "module": "NodeNext",
+    "moduleResolution": "NodeNext",
+    "strict": true,
+    "esModuleInterop": true,
+    "skipLibCheck": true,
+    "outDir": "dist",
+    "rootDir": "src",
+    "declaration": true
+  },
+  "include": [
+    "src/cli.ts",
+    "src/lib/config.ts",
+    "src/lib/logging.ts",
+    "src/db/**/*.ts",
+    "src/schema/**/*.ts",
+    "src/strava/**/*.ts"
+  ],
+  "exclude": ["node_modules", "dist", ".svelte-kit"]
+}

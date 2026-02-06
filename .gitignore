@@ -10,6 +10,7 @@ coverage/
 # Environment and secrets
 .env
 .env.*
+!.env.example
 
 # SQLite databases
 *.db
@@ -39,3 +40,5 @@ npm-debug.log*
 templates/plan-viewer.html
 cloud-output/
 cloud-output/
+.vercel
+.env*.local

@@ -89,3 +89,7 @@ Claude will use this information to create a plan tailored to your current fitne
 # About
 
 Claude Coach is an independent, open-source project and is not made by, endorsed by, or affiliated with Anthropic, PBC. "Claude" is a trademark of Anthropic. This tool is a skill/plugin that works with Claude products but is developed and maintained independently. License: MIT.
+
+## Cloud Hosting (Supabase + Vercel)
+
+See `docs/deploy.md` for the free hosting setup with Supabase and Vercel.

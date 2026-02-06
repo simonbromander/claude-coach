@@ -7,7 +7,7 @@
     recalculatePowerZones,
     recalculateRunPaceZones,
     recalculateSwimPaceZones,
-  } from "../stores/settings.js";
+  } from "../../lib/settings-core.js";
   import { version } from "../../../package.json";
 
   interface Props {

@@ -6,8 +6,8 @@
     Workout,
   } from "../../schema/training-plan.js";
   import type { Settings } from "../stores/settings.js";
-  import type { PlanChanges } from "../stores/changes.js";
-  import { getEffectiveWorkout, isWorkoutDeleted } from "../stores/changes.js";
+  import type { PlanChanges } from "../../lib/plan-changes.js";
+  import { getEffectiveWorkout, isWorkoutDeleted } from "../../lib/plan-changes.js";
   import WeekCard from "./WeekCard.svelte";
   import { getOrderedDays, getTodayISO, parseDate, formatDateISO } from "../lib/utils.js";
 
