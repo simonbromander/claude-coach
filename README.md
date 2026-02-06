@@ -10,6 +10,10 @@ Workouts can be exported as simple calendar events (.ics), Zwift (.zwo), Garmin 
 
 See example training plans at [felixrieseberg.github.io/claude-coach](https://felixrieseberg.github.io/claude-coach/#demos).
 
+## Web Plan Builder
+
+This fork adds a web-based plan builder that connects to Strava and uses the Claude API to generate plans. Open `/builder` in the hosted app.
+
 ## Installation & Creating a training plan
 
 I happen to work at Anthropic, so this tool is optimized for Claude. To use this tool, you need access to Claude.ai or Claude Code with network access for Skills. Depending on user/admin settings, Skills may have full, partial, or no network access.

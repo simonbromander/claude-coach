@@ -59,6 +59,8 @@
         {uploading ? "Uploading..." : "Upload & View Plan"}
       </button>
 
+      <a class="button secondary" href="/builder">Build a New Plan</a>
+
       {#if error}
         <p class="error">{error}</p>
       {/if}
@@ -157,6 +159,19 @@
     background: #21262d;
     color: #484f58;
     cursor: not-allowed;
+  }
+
+  .button.secondary {
+    background: transparent;
+    border: 1px solid #30363d;
+    color: #c9d1d9;
+    text-decoration: none;
+    text-align: center;
+  }
+
+  .button.secondary:hover {
+    border-color: #58a6ff;
+    color: #58a6ff;
   }
 
   .error {

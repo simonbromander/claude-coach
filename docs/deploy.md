@@ -21,6 +21,10 @@ This app uses Supabase for plan storage and Vercel for hosting.
 
 Grab the **Project URL** and **Service Role Key** from the Supabase dashboard.
 
+## Strava Setup
+
+Create a Strava app and set the callback **domain** to your app host (for Vercel: `claude-coach.vercel.app`). Strava requires the callback field to be just a domain (no path). The app uses `PUBLIC_APP_URL/api/strava/callback` internally.
+
 ## Vercel Setup
 
 1. Log in to Vercel:
@@ -30,6 +34,15 @@ Grab the **Project URL** and **Service Role Key** from the Supabase dashboard.
 3. Add environment variables:
    - `SUPABASE_URL`
    - `SUPABASE_SERVICE_ROLE_KEY`
+   - `PUBLIC_APP_URL`
+   - `BUILDER_ACCESS_SECRET`
+   - `ANTHROPIC_API_KEY`
+   - `ANTHROPIC_MODEL`
+   - `STRAVA_CLIENT_ID`
+   - `STRAVA_CLIENT_SECRET`
+   - `STRAVA_ACCESS_TOKEN` (optional seed)
+   - `STRAVA_REFRESH_TOKEN` (optional seed)
+   - `STRAVA_SYNC_DAYS` (default 730)
 4. Deploy:
    - `vercel --prod`
 
@@ -40,6 +53,15 @@ Create a `.env` file with:
 ```
 SUPABASE_URL=...
 SUPABASE_SERVICE_ROLE_KEY=...
+PUBLIC_APP_URL=http://localhost:5173
+BUILDER_ACCESS_SECRET=...
+ANTHROPIC_API_KEY=...
+ANTHROPIC_MODEL=claude-opus-4-20250514
+STRAVA_CLIENT_ID=...
+STRAVA_CLIENT_SECRET=...
+STRAVA_ACCESS_TOKEN=...
+STRAVA_REFRESH_TOKEN=...
+STRAVA_SYNC_DAYS=730
 ```
 
 Run the app:
